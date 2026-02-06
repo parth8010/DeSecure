@@ -1,0 +1,13 @@
+# Backend Dependencies - Use pre-built wheels
+fastapi
+uvicorn
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+pyjwt
+bcrypt
+pydantic
+email-validator
+python-multipart
+pqcrypto
+cryptography
