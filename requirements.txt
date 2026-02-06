@@ -9,3 +9,5 @@ bcrypt
 pydantic
 email-validator
 python-multipart
+pqcrypto
+cryptography
