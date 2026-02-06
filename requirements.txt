@@ -1,13 +1,11 @@
-# Backend Dependencies - Railway Compatible
-fastapi==0.109.0
-uvicorn==0.27.0
-sqlalchemy==2.0.25
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-pyjwt==2.8.0
-bcrypt==4.1.2
-pydantic==2.6.0
-email-validator==2.1.0
-python-multipart==0.0.6
-cryptography==42.0.0
-typing-extensions>=4.9.0
+# Backend Dependencies - Use pre-built wheels
+fastapi
+uvicorn
+sqlalchemy
+python-jose[cryptography]
+passlib[bcrypt]
+pyjwt
+bcrypt
+pydantic
+email-validator
+python-multipart
