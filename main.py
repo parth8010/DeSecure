@@ -33,11 +33,18 @@ app = FastAPI(
 
 # Configure CORS to allow both web and mobile access
 import os
-allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000").split(",")
+
+# Get allowed origins from environment variable or use defaults
+cors_origins_env = os.environ.get("CORS_ORIGINS", "")
+if cors_origins_env:
+    allowed_origins = [origin.strip() for origin in cors_origins_env.split(",")]
+else:
+    # Default to allow all for development, but can be restricted in production
+    allowed_origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -935,10 +942,14 @@ if __name__ == "__main__":
     # Get port from environment variable (Railway sets this)
     port = int(os.environ.get("PORT", 8000))
     
+    # Get reload setting (disable in production)
+    reload = os.environ.get("ENVIRONMENT", "development") == "development"
+    
     # Run server
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=port,
+        reload=reload,
         # Railway handles TLS/HTTPS automatically
     )

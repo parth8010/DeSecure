@@ -1,13 +1,21 @@
 # Backend Dependencies - Use pre-built wheels
 fastapi
-uvicorn
+uvicorn[standard]
 sqlalchemy
 python-jose[cryptography]
 passlib[bcrypt]
 pyjwt
 bcrypt
 pydantic
+pydantic[email]
 email-validator
 python-multipart
 pqcrypto
 cryptography
+psycopg2-binary
+# Optional deepfake detection dependencies (install if needed)
+# torch
+# opencv-python-headless
+# numpy
+# librosa
+# pillow
