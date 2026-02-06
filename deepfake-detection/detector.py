@@ -1,29 +1,8 @@
-import torch
-import torch.nn as nn
 import numpy as np
 import cv2
-from PIL import Image
 import logging
 
 logger = logging.getLogger(__name__)
-
-# ---------------- CNN MODELS ---------------- #
-
-class MesoNet(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(3, 8, 3, padding=1), nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Conv2d(8, 16, 3, padding=1), nn.ReLU(),
-            nn.MaxPool2d(2),
-            nn.Flatten(),
-            nn.Linear(16 * 64 * 64, 1),
-            nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        return self.net(x)
 
 
 # ---------------- DETECTOR ---------------- #
@@ -33,10 +12,7 @@ class DeepfakeDetector:
         if config is None:
             config = {}
         self.threshold = config.get("detection_threshold", 0.7)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = MesoNet().to(self.device)
-        self.model.eval()
-        logger.info(f"DeepfakeDetector initialized on {self.device}")
+        logger.info(f"DeepfakeDetector initialized (demo mode - no PyTorch)")
 
     def calibrate(self, score):
         """
