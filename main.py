@@ -37,7 +37,7 @@ allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://l
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins + ["*"],  # Allow configured origins plus wildcard for development
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
