@@ -250,6 +250,78 @@ class ApiService {
             return false;
         }
     }
+
+    /**
+     * Analyze image for deepfake
+     */
+    async analyzeImageDeepfake(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        const response = await fetch(`${this.baseUrl}/api/deepfake/analyze-image`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to analyze image');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Analyze video for deepfake
+     */
+    async analyzeVideoDeepfake(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        const response = await fetch(`${this.baseUrl}/api/deepfake/analyze-video`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to analyze video');
+        }
+
+        return await response.json();
+    }
+
+    /**
+     * Analyze audio for deepfake
+     */
+    async analyzeAudioDeepfake(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const token = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+        const response = await fetch(`${this.baseUrl}/api/deepfake/analyze-audio`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to analyze audio');
+        }
+
+        return await response.json();
+    }
 }
 
 // Create global API service instance
