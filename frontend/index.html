@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cybersecurity Platform - Web App</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app-container" class="app-container" style="display: none;">
+        
+        <!-- Authentication Page -->
+        <div id="auth-page" class="auth-page">
+            <div class="auth-container">
+                <div class="auth-header">
+                    <i class="fas fa-shield-alt"></i>
+                    <h1>Cybersecurity Platform</h1>
+                    <p>Secure API Key Management</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form" class="auth-form">
+                    <h2>Welcome Back</h2>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label for="login-email">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input type="email" id="login-email" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">
+                                <i class="fas fa-lock"></i> Password
+                            </label>
+                            <input type="password" id="login-password" required placeholder="Enter your password">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+                    <p class="auth-switch">
+                        Don't have an account? 
+                        <a href="#" onclick="showRegister()">Register here</a>
+                    </p>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="auth-form" style="display: none;">
+                    <h2>Create Account</h2>
+                    <form onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label for="register-username">
+                                <i class="fas fa-user"></i> Username
+                            </label>
+                            <input type="text" id="register-username" required 
+                                   placeholder="Choose a username" minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-email">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input type="email" id="register-email" required 
+                                   placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label for="register-password">
+                                <i class="fas fa-lock"></i> Password
+                            </label>
+                            <input type="password" id="register-password" required 
+                                   placeholder="Choose a password" minlength="8">
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Register
+                        </button>
+                    </form>
+                    <p class="auth-switch">
+                        Already have an account? 
+                        <a href="#" onclick="showLogin()">Login here</a>
+                    </p>
+                </div>
+
+                <div id="auth-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" class="dashboard-page" style="display: none;">
+            <!-- Navigation Bar -->
+            <nav class="navbar">
+                <div class="navbar-brand">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Cybersecurity Platform</span>
+                </div>
+                <div class="navbar-user">
+                    <span id="user-info"></span>
+                    <button onclick="handleLogout()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Dashboard Content -->
+            <div class="dashboard-content">
+                <div class="dashboard-header">
+                    <h2>API Key Management</h2>
+                    <button onclick="showGenerateKeyModal()" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Generate New Key
+                    </button>
+                </div>
+
+                <!-- API Keys List -->
+                <div id="api-keys-container" class="api-keys-container">
+                    <div class="loading-keys">
+                        <div class="spinner"></div>
+                        <p>Loading API keys...</p>
+                    </div>
+                </div>
+
+                <!-- Quantum Wallet Section -->
+                <div class="dashboard-header" style="margin-top: 40px;">
+                    <h2><i class="fas fa-wallet"></i> Quantum-Proof Crypto Wallet</h2>
+                    <button id="wallet-action-btn" onclick="handleWalletAction()" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-plus"></i> Create Wallet
+                    </button>
+                </div>
+
+                <div id="wallet-container" class="api-keys-container">
+                    <div class="loading-keys">
+                        <div class="spinner"></div>
+                        <p>Loading wallet...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate API Key Modal -->
+    <div id="generate-key-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-key"></i> Generate New API Key</h3>
+                <button onclick="closeGenerateKeyModal()" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form onsubmit="handleGenerateKey(event)">
+                <div class="form-group">
+                    <label for="key-name">
+                        <i class="fas fa-tag"></i> Key Name
+                    </label>
+                    <input type="text" id="key-name" required 
+                           placeholder="e.g., Production API Key">
+                </div>
+                <div class="form-group">
+                    <label for="key-description">
+                        <i class="fas fa-info-circle"></i> Description (Optional)
+                    </label>
+                    <textarea id="key-description" rows="3" 
+                              placeholder="Brief description of what this key will be used for"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="key-expiry">
+                        <i class="fas fa-calendar-alt"></i> Expiry Days
+                    </label>
+                    <input type="number" id="key-expiry" value="90" 
+                           min="1" max="365" required>
+                    <small>Key will automatically expire after this many days</small>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeGenerateKeyModal()" 
+                            class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-key"></i> Generate Key
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Show API Key Modal -->
+    <div id="show-key-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> API Key Generated!</h3>
+            </div>
+            <div class="key-display">
+                <div class="warning-box">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Important:</strong> Copy this key now! You won't be able to see it again.
+                </div>
+                <div class="key-value-container">
+                    <code id="generated-key-value"></code>
+                    <button onclick="copyKey()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <div class="key-info">
+                    <p><strong>Name:</strong> <span id="generated-key-name"></span></p>
+                    <p><strong>Expires:</strong> <span id="generated-key-expiry"></span></p>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeShowKeyModal()" class="btn btn-primary">
+                    I've Saved the Key
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Wallet Modal -->
+    <div id="create-wallet-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-wallet"></i> Create Quantum-Proof Wallet</h3>
+            </div>
+            <form onsubmit="handleCreateWallet(event)">
+                <div class="form-group">
+                    <label for="wallet-password">
+                        <i class="fas fa-lock"></i> Wallet Password
+                    </label>
+                    <input type="password" id="wallet-password" required 
+                           placeholder="Enter a strong password" minlength="8">
+                    <small>This password encrypts your wallet keys. Keep it safe!</small>
+                </div>
+                <div class="form-group">
+                    <label for="wallet-password-confirm">
+                        <i class="fas fa-lock"></i> Confirm Password
+                    </label>
+                    <input type="password" id="wallet-password-confirm" required 
+                           placeholder="Confirm your password" minlength="8">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeCreateWalletModal()" 
+                            class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-shield-alt"></i> Create Wallet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Show Recovery Phrase Modal -->
+    <div id="recovery-phrase-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Wallet Created Successfully!</h3>
+            </div>
+            <div class="key-display">
+                <div class="warning-box">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>CRITICAL:</strong> Save this recovery phrase! You'll need it to recover your wallet if you lose your password.
+                </div>
+                <div class="recovery-phrase-container">
+                    <div id="recovery-phrase-words"></div>
+                </div>
+                <div class="key-info">
+                    <p><strong>Wallet ID:</strong> <span id="created-wallet-id"></span></p>
+                    <p><strong>Algorithm:</strong> <span id="created-wallet-algorithm"></span></p>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="phrase-saved-checkbox">
+                    <label for="phrase-saved-checkbox">I have safely saved my recovery phrase</label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeRecoveryPhraseModal()" class="btn btn-primary" id="confirm-saved-btn" disabled>
+                    Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sign Message Modal -->
+    <div id="sign-message-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-signature"></i> Sign Message</h3>
+            </div>
+            <form onsubmit="handleSignMessage(event)">
+                <div class="form-group">
+                    <label for="sign-message-text">
+                        <i class="fas fa-comment"></i> Message to Sign
+                    </label>
+                    <textarea id="sign-message-text" rows="4" required 
+                              placeholder="Enter the message you want to sign"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="sign-wallet-password">
+                        <i class="fas fa-lock"></i> Wallet Password
+                    </label>
+                    <input type="password" id="sign-wallet-password" required 
+                           placeholder="Enter your wallet password">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeSignMessageModal()" 
+                            class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-signature"></i> Sign Message
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Show Signature Modal -->
+    <div id="show-signature-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Message Signed!</h3>
+            </div>
+            <div class="key-display">
+                <div class="key-value-container">
+                    <code id="signature-value" style="font-size: 12px; word-break: break-all;"></code>
+                    <button onclick="copySignature()" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeShowSignatureModal()" class="btn btn-primary">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Scripts -->
+    <script src="config.js"></script>
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
