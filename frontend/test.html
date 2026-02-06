@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        .status { 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🔗 Backend Connection Test</h1>
+        
+        <div id="config-info" class="status info">
+            <strong>Loading configuration...</strong>
+        </div>
+        
+        <button onclick="testConnection()">Test Backend Connection</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Railway backend URL
+        const RAILWAY_URL = 'https://mindful-abundance-production.up.railway.app';
+        
+        // Display current config
+        document.getElementById('config-info').innerHTML = `
+            <strong>Backend URL:</strong> ${RAILWAY_URL}<br>
+            <strong>Current Page:</strong> ${window.location.href}
+        `;
+        
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="status info">Testing connection...</div>';
+            
+            try {
+                // Test health endpoint
+                const response = await fetch(`${RAILWAY_URL}/health`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ <strong>Connection Successful!</strong><br><br>
+                            Backend Status: ${data.status}<br>
+                            Database: ${data.database}<br>
+                            Timestamp: ${data.timestamp}
+                        </div>
+                        <h3>Full Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <div class="status success">
+                            <strong>✅ Your backend is working perfectly!</strong><br>
+                            You can now use the main application: <a href="index.html">index.html</a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ <strong>Connection Failed</strong><br><br>
+                        Error: ${error.message}<br><br>
+                        <strong>Troubleshooting:</strong><br>
+                        1. Check if Railway backend is running<br>
+                        2. Visit: <a href="${RAILWAY_URL}/health" target="_blank">${RAILWAY_URL}/health</a><br>
+                        3. Check browser console (F12) for details
+                    </div>
+                `;
+            }
+        }
+        
+        // Auto-test on load
+        window.onload = () => {
+            testConnection();
+        };
+    </script>
+</body>
+</html>
