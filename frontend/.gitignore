@@ -1,0 +1,30 @@
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp_*
+temp_*
+*.tmp
+
+# Environment specific config (if you create one)
+config.local.js
+
+# Build files (if you add a build process later)
+dist/
+build/
+
+# Dependencies (if you add npm later)
+node_modules/
+package-lock.json
+yarn.lock

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Backend Connection</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        button {
+            background: #00ff00;
+            color: #1e1e1e;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        .output {
+            background: #000;
+            border: 2px solid #00ff00;
+            padding: 15px;
+            margin: 20px 0;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .info { color: #00aaff; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Backend Connection Tester</h1>
+    <p>Backend: <span class="info">https://mindful-abundance-production.up.railway.app</span></p>
+    
+    <div>
+        <button onclick="testHealth()">Test Health</button>
+        <button onclick="testRegister()">Test Register</button>
+        <button onclick="testCORS()">Test CORS</button>
+        <button onclick="clearOutput()">Clear</button>
+    </div>
+    
+    <div id="output" class="output">Ready to test...\n</div>
+
+    <script>
+        const baseUrl = 'https://mindful-abundance-production.up.railway.app';
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const span = document.createElement('span');
+            span.className = type;
+            span.textContent = `[${timestamp}] ${message}\n`;
+            output.appendChild(span);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = 'Ready to test...\n';
+        }
+        
+        async function testHealth() {
+            log('Testing /health endpoint...', 'info');
+            try {
+                const response = await fetch(`${baseUrl}/health`);
+                const data = await response.json();
+                log(`✅ SUCCESS: ${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+                log(`Details: ${error.stack}`, 'error');
+            }
+        }
+        
+        async function testRegister() {
+            log('Testing /api/auth/register endpoint...', 'info');
+            const testData = {
+                email: `test${Date.now()}@example.com`,
+                username: `testuser${Date.now()}`,
+                password: 'testpass123'
+            };
+            log(`Sending: ${JSON.stringify(testData, null, 2)}`, 'info');
+            
+            try {
+                const response = await fetch(`${baseUrl}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                log(`Response Status: ${response.status} ${response.statusText}`, 'info');
+                
+                const contentType = response.headers.get('content-type');
+                log(`Content-Type: ${contentType}`, 'info');
+                
+                if (contentType && contentType.includes('application/json')) {
+                    const data = await response.json();
+                    if (response.ok) {
+                        log(`✅ SUCCESS: ${JSON.stringify(data, null, 2)}`, 'success');
+                    } else {
+                        log(`❌ ERROR Response: ${JSON.stringify(data, null, 2)}`, 'error');
+                    }
+                } else {
+                    const text = await response.text();
+                    log(`❌ ERROR (non-JSON): ${text}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ NETWORK ERROR: ${error.message}`, 'error');
+                log(`Details: ${error.stack}`, 'error');
+            }
+        }
+        
+        async function testCORS() {
+            log('Testing CORS configuration...', 'info');
+            try {
+                const response = await fetch(`${baseUrl}/health`, {
+                    method: 'OPTIONS'
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                };
+                
+                log(`CORS Headers: ${JSON.stringify(corsHeaders, null, 2)}`, 'info');
+                
+                if (corsHeaders['Access-Control-Allow-Origin']) {
+                    log(`✅ CORS is configured`, 'success');
+                } else {
+                    log(`⚠️  CORS headers not found (might still work)`, 'error');
+                }
+            } catch (error) {
+                log(`❌ ERROR: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-run health check on load
+        window.onload = () => {
+            setTimeout(testHealth, 500);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "cybersecurity-platform-frontend",
+  "version": "1.0.0",
+  "description": "Frontend web application for API key management",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 3000",
+    "serve": "python -m http.server 3000"
+  },
+  "keywords": [
+    "api-key",
+    "authentication",
+    "security",
+    "frontend",
+    "web-app"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
