@@ -10,7 +10,7 @@ const CONFIG = {
     
     // Force Railway backend even in local development
     // Set to false if you want to use local backend
-    FORCE_RAILWAY: true,
+    FORCE_RAILWAY: false,
     
     // Automatically detect environment
     get API_BASE_URL() {

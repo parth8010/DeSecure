@@ -82,6 +82,9 @@ async function showDashboard() {
     
     // Load wallet
     await loadWallet();
+    
+    // Initialize deepfake detection
+    initDeepfakeDetection();
 }
 
 function showLogin() {
@@ -656,3 +659,157 @@ document.addEventListener('click', (event) => {
         event.target.classList.remove('show');
     }
 });
+
+// ============================================================================
+// DEEPFAKE DETECTION FUNCTIONS
+// ============================================================================
+
+let currentUploadType = 'image';
+
+// Initialize deepfake detection when DOM is ready
+function initDeepfakeDetection() {
+    // Get elements
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('deepfake-file-input');
+    const imageBtn = document.getElementById('image-btn');
+    const videoBtn = document.getElementById('video-btn');
+    const audioBtn = document.getElementById('audio-btn');
+    
+    if (!uploadArea || !fileInput) {
+        console.error('Deepfake elements not found');
+        return;
+    }
+    
+    // Click upload area to trigger file input
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+    
+    // Handle file selection
+    fileInput.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        await handleDeepfakeUpload(file);
+        fileInput.value = ''; // Reset
+    });
+    
+    // Handle type selector buttons
+    [imageBtn, videoBtn, audioBtn].forEach(btn => {
+        if (btn) {
+            btn.addEventListener('click', () => {
+                const type = btn.getAttribute('data-type');
+                selectUploadType(type);
+            });
+        }
+    });
+    
+    console.log('Deepfake detection initialized');
+}
+
+function selectUploadType(type) {
+    currentUploadType = type;
+    
+    // Update button states
+    const buttons = document.querySelectorAll('.upload-type-btn');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`${type}-btn`).classList.add('active');
+    
+    // Update file input and hint
+    const fileInput = document.getElementById('deepfake-file-input');
+    const hint = document.getElementById('upload-hint');
+    
+    if (type === 'image') {
+        fileInput.accept = 'image/*';
+        hint.textContent = 'Supported: JPG, PNG, JPEG';
+    } else if (type === 'video') {
+        fileInput.accept = 'video/*';
+        hint.textContent = 'Supported: MP4, AVI, MOV';
+    } else if (type === 'audio') {
+        fileInput.accept = 'audio/*';
+        hint.textContent = 'Supported: WAV, MP3';
+    }
+    
+    // Hide previous results
+    const resultDiv = document.getElementById('deepfake-result');
+    if (resultDiv) {
+        resultDiv.style.display = 'none';
+    }
+}
+
+async function handleDeepfakeUpload(file) {
+    const uploadArea = document.getElementById('upload-area');
+    const originalHTML = uploadArea.innerHTML;
+    
+    // Show loading state
+    uploadArea.innerHTML = `
+        <div class="spinner"></div>
+        <p>Analyzing ${currentUploadType}...</p>
+        <small>This may take a few moments</small>
+    `;
+    
+    try {
+        let result;
+        
+        // Call appropriate API based on type
+        if (currentUploadType === 'image') {
+            result = await api.analyzeImageDeepfake(file);
+        } else if (currentUploadType === 'video') {
+            result = await api.analyzeVideoDeepfake(file);
+        } else if (currentUploadType === 'audio') {
+            result = await api.analyzeAudioDeepfake(file);
+        }
+        
+        // Display results
+        displayDeepfakeResult(result);
+        showNotification('Analysis complete!', 'success');
+        
+    } catch (error) {
+        console.error('Deepfake analysis error:', error);
+        showNotification('Failed to analyze file: ' + error.message, 'error');
+    } finally {
+        // Reset upload area
+        uploadArea.innerHTML = originalHTML;
+    }
+}
+
+function displayDeepfakeResult(result) {
+    const resultDiv = document.getElementById('deepfake-result');
+    const verdictDiv = document.getElementById('result-verdict');
+    const confidenceSpan = document.getElementById('result-confidence');
+    const detailsDiv = document.getElementById('result-details');
+    
+    // Show result
+    resultDiv.style.display = 'block';
+    
+    // Display verdict
+    const verdict = result.verdict;
+    verdictDiv.textContent = verdict;
+    verdictDiv.className = 'result-verdict ' + verdict.toLowerCase();
+    
+    // Display confidence
+    const confidencePercent = (result.confidence * 100).toFixed(1);
+    confidenceSpan.textContent = `${confidencePercent}%`;
+    
+    // Display details if available
+    if (result.details) {
+        let detailsHTML = '<h4>Analysis Details:</h4><ul>';
+        for (const [key, value] of Object.entries(result.details)) {
+            const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            let formattedValue;
+            if (typeof value === 'number') {
+                formattedValue = value < 1 ? (value * 100).toFixed(1) + '%' : value.toFixed(2);
+            } else {
+                formattedValue = value;
+            }
+            detailsHTML += `<li><strong>${formattedKey}:</strong> ${formattedValue}</li>`;
+        }
+        detailsHTML += '</ul>';
+        detailsDiv.innerHTML = detailsHTML;
+    } else {
+        detailsDiv.innerHTML = '';
+    }
+    
+    // Scroll to result
+    resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}

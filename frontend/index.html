@@ -138,6 +138,45 @@
                         <p>Loading wallet...</p>
                     </div>
                 </div>
+
+                <!-- Deepfake Detection Section -->
+                <div class="dashboard-header" style="margin-top: 40px;">
+                    <h2><i class="fas fa-video"></i> Deepfake Detection</h2>
+                </div>
+
+                <div class="deepfake-container">
+                    <div class="deepfake-upload-section">
+                        <div class="upload-type-selector">
+                            <button class="upload-type-btn active" id="image-btn" data-type="image">
+                                <i class="fas fa-image"></i> Image
+                            </button>
+                            <button class="upload-type-btn" id="video-btn" data-type="video">
+                                <i class="fas fa-video"></i> Video
+                            </button>
+                            <button class="upload-type-btn" id="audio-btn" data-type="audio">
+                                <i class="fas fa-microphone"></i> Audio
+                            </button>
+                        </div>
+
+                        <form id="deepfake-upload-form">
+                            <div class="upload-area" id="upload-area">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>Click to upload or drag and drop</p>
+                                <small id="upload-hint">Supported: JPG, PNG, JPEG</small>
+                            </div>
+                            <input type="file" id="deepfake-file-input" accept="image/*" style="display: none;">
+                        </form>
+
+                        <div id="deepfake-result" class="deepfake-result" style="display: none;">
+                            <h3>Analysis Result</h3>
+                            <div class="result-verdict" id="result-verdict"></div>
+                            <div class="result-confidence">
+                                <strong>Confidence:</strong> <span id="result-confidence"></span>
+                            </div>
+                            <div class="result-details" id="result-details"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -337,8 +376,8 @@
     <div id="notification-container" class="notification-container"></div>
 
     <!-- Scripts -->
-    <script src="config.js"></script>
-    <script src="api.js"></script>
-    <script src="app.js"></script>
+    <script src="config.js?v=2"></script>
+    <script src="api.js?v=2"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>
