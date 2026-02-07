@@ -31,11 +31,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# SIMPLE CORS - Allow all origins (no credentials with wildcard)
+# Configure CORS to allow both web and mobile access
+import os
+allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -727,198 +730,6 @@ def decrypt_message(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to decrypt message: {str(e)}"
-        )
-
-
-# ============================================================================
-# DEEPFAKE DETECTION ENDPOINTS
-# ============================================================================
-
-from fastapi import UploadFile, File
-import tempfile
-import os as os_module
-
-# Lazy load deepfake detector to avoid startup errors if dependencies missing
-deepfake_detector = None
-
-def get_deepfake_detector():
-    global deepfake_detector
-    if deepfake_detector is None:
-        try:
-            import sys
-            sys.path.append("deepfake-detection")
-            from detector import DeepfakeDetector
-            deepfake_detector = DeepfakeDetector({"detection_threshold": 0.7})
-        except ImportError as e:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Deepfake detection not available: {str(e)}. Install dependencies: pip install torch opencv-python numpy"
-            )
-    return deepfake_detector
-
-@app.post("/api/deepfake/analyze-image")
-async def analyze_image_deepfake(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Analyze an image for deepfake detection
-    - Upload an image (jpg, png, jpeg)
-    - Returns verdict (REAL/FAKE) and confidence score
-    """
-    try:
-        # Validate file type
-        if not file.content_type.startswith("image/"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be an image (jpg, png, jpeg)"
-            )
-        
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1]
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-        
-        # Analyze image
-        detector = get_deepfake_detector()
-        result = detector.analyze_image(tmp_path)
-        
-        # Cleanup
-        os_module.unlink(tmp_path)
-        
-        if result["success"]:
-            return {
-                "success": True,
-                "verdict": result["verdict"],
-                "confidence": result["confidence"],
-                "details": result["details"],
-                "filename": file.filename
-            }
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result["error"]
-            )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze image: {str(e)}"
-        )
-
-
-@app.post("/api/deepfake/analyze-video")
-async def analyze_video_deepfake(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Analyze a video for deepfake detection
-    - Upload a video (mp4, avi, mov)
-    - Returns verdict (REAL/FAKE) and confidence score
-    """
-    try:
-        # Validate file type
-        if not file.content_type.startswith("video/"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be a video (mp4, avi, mov)"
-            )
-        
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1]
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-        
-        # Analyze video
-        detector = get_deepfake_detector()
-        result = detector.analyze_video(tmp_path)
-        
-        # Cleanup
-        os_module.unlink(tmp_path)
-        
-        if result["success"]:
-            return {
-                "success": True,
-                "verdict": result["verdict"],
-                "confidence": result["confidence"],
-                "details": result["details"],
-                "filename": file.filename
-            }
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result["error"]
-            )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze video: {str(e)}"
-        )
-
-
-@app.post("/api/deepfake/analyze-audio")
-async def analyze_audio_deepfake(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Analyze an audio file for deepfake detection
-    - Upload audio (wav, mp3)
-    - Returns verdict (REAL/FAKE) and confidence score
-    """
-    try:
-        # Validate file type
-        if not file.content_type.startswith("audio/"):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File must be an audio file (wav, mp3)"
-            )
-        
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1]
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-            content = await file.read()
-            tmp.write(content)
-            tmp_path = tmp.name
-        
-        # Analyze audio
-        import sys
-        sys.path.append("deepfake-detection")
-        from utils.audio_processor import analyze_voice
-        result = analyze_voice(tmp_path)
-        
-        # Cleanup
-        os_module.unlink(tmp_path)
-        
-        if result["success"]:
-            return {
-                "success": True,
-                "verdict": result["verdict"],
-                "confidence": result["confidence"],
-                "filename": file.filename
-            }
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result["error"]
-            )
-    
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to analyze audio: {str(e)}"
         )
 
 
