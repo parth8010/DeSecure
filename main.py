@@ -3,7 +3,6 @@ Cybersecurity Platform - Backend API Server
 Serves both Web and Android applications
 """
 from fastapi import FastAPI, Depends, HTTPException, status, Header
-from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timedelta
@@ -32,10 +31,14 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# SIMPLE CORS - Allow all origins
+# Configure CORS to allow both web and mobile access
+import os
+allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -94,8 +97,6 @@ def health_check():
         "database": "connected",
         "timestamp": datetime.utcnow().isoformat()
     }
-
-
 
 
 # ============================================================================
@@ -739,74 +740,24 @@ def decrypt_message(
 from fastapi import UploadFile, File
 import tempfile
 import os as os_module
-import random
-import hashlib
 
-def simple_deepfake_analysis(file_path: str, file_type: str):
-    """
-    Simple deepfake detection using file analysis
-    This is a DEMO implementation - uses file hash and random analysis
-    """
-    try:
-        # Read file and calculate hash
-        with open(file_path, 'rb') as f:
-            file_data = f.read()
-            file_size = len(file_data)
-        
-        # Calculate a pseudo-random but consistent score based on file hash
-        file_hash = hashlib.md5(file_data).hexdigest()
-        hash_value = int(file_hash[:8], 16)
-        
-        # Generate confidence score (0.2 to 0.85 range)
-        base_confidence = 0.2 + (hash_value % 1000) / 1000.0 * 0.65
-        
-        # Add slight randomness
-        confidence = base_confidence + random.uniform(-0.05, 0.05)
-        confidence = min(max(confidence, 0.15), 0.90)
-        
-        # Determine verdict
-        verdict = "FAKE" if confidence > 0.65 else "REAL"
-        
-        # Create realistic-looking details
-        if file_type == "image":
-            return {
-                "success": True,
-                "verdict": verdict,
-                "confidence": float(confidence),
-                "details": {
-                    "file_size_kb": round(file_size / 1024, 2),
-                    "analysis_method": "Statistical Analysis",
-                    "ai_confidence": round(confidence * 100, 1),
-                    "file_hash": file_hash[:16]
-                }
-            }
-        elif file_type == "video":
-            return {
-                "success": True,
-                "verdict": verdict,
-                "confidence": float(confidence),
-                "details": {
-                    "file_size_mb": round(file_size / (1024*1024), 2),
-                    "analysis_method": "Temporal Analysis",
-                    "ai_confidence": round(confidence * 100, 1),
-                    "file_hash": file_hash[:16]
-                }
-            }
-        elif file_type == "audio":
-            return {
-                "success": True,
-                "verdict": verdict,
-                "confidence": float(confidence),
-                "details": {
-                    "file_size_kb": round(file_size / 1024, 2),
-                    "analysis_method": "Voice Pattern Analysis",
-                    "ai_confidence": round(confidence * 100, 1),
-                    "file_hash": file_hash[:16]
-                }
-            }
-        
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+# Lazy load deepfake detector to avoid startup errors if dependencies missing
+deepfake_detector = None
+
+def get_deepfake_detector():
+    global deepfake_detector
+    if deepfake_detector is None:
+        try:
+            import sys
+            sys.path.append("deepfake-detection")
+            from detector import DeepfakeDetector
+            deepfake_detector = DeepfakeDetector({"detection_threshold": 0.7})
+        except ImportError as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Deepfake detection not available: {str(e)}. Install dependencies: pip install torch opencv-python numpy"
+            )
+    return deepfake_detector
 
 @app.post("/api/deepfake/analyze-image")
 async def analyze_image_deepfake(
@@ -818,47 +769,45 @@ async def analyze_image_deepfake(
     - Upload an image (jpg, png, jpeg)
     - Returns verdict (REAL/FAKE) and confidence score
     """
-    tmp_path = None
     try:
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1] if file.filename else ".jpg"
-        content = await file.read()
+        # Validate file type
+        if not file.content_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be an image (jpg, png, jpeg)"
+            )
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode='wb') as tmp:
+        # Save uploaded file temporarily
+        suffix = os_module.path.splitext(file.filename)[-1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await file.read()
             tmp.write(content)
-            tmp.flush()
             tmp_path = tmp.name
         
         # Analyze image
-        result = simple_deepfake_analysis(tmp_path, "image")
+        detector = get_deepfake_detector()
+        result = detector.analyze_image(tmp_path)
         
         # Cleanup
-        if tmp_path and os_module.path.exists(tmp_path):
-            os_module.unlink(tmp_path)
+        os_module.unlink(tmp_path)
         
         if result["success"]:
             return {
                 "success": True,
                 "verdict": result["verdict"],
                 "confidence": result["confidence"],
-                "details": result.get("details", {}),
+                "details": result["details"],
                 "filename": file.filename
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get("error", "Analysis failed")
+                detail=result["error"]
             )
     
     except HTTPException:
         raise
     except Exception as e:
-        # Cleanup on error
-        if tmp_path and os_module.path.exists(tmp_path):
-            try:
-                os_module.unlink(tmp_path)
-            except:
-                pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze image: {str(e)}"
@@ -875,47 +824,45 @@ async def analyze_video_deepfake(
     - Upload a video (mp4, avi, mov)
     - Returns verdict (REAL/FAKE) and confidence score
     """
-    tmp_path = None
     try:
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1] if file.filename else ".mp4"
-        content = await file.read()
+        # Validate file type
+        if not file.content_type.startswith("video/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a video (mp4, avi, mov)"
+            )
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode='wb') as tmp:
+        # Save uploaded file temporarily
+        suffix = os_module.path.splitext(file.filename)[-1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await file.read()
             tmp.write(content)
-            tmp.flush()
             tmp_path = tmp.name
         
         # Analyze video
-        result = simple_deepfake_analysis(tmp_path, "video")
+        detector = get_deepfake_detector()
+        result = detector.analyze_video(tmp_path)
         
         # Cleanup
-        if tmp_path and os_module.path.exists(tmp_path):
-            os_module.unlink(tmp_path)
+        os_module.unlink(tmp_path)
         
         if result["success"]:
             return {
                 "success": True,
                 "verdict": result["verdict"],
                 "confidence": result["confidence"],
-                "details": result.get("details", {}),
+                "details": result["details"],
                 "filename": file.filename
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get("error", "Analysis failed")
+                detail=result["error"]
             )
     
     except HTTPException:
         raise
     except Exception as e:
-        # Cleanup on error
-        if tmp_path and os_module.path.exists(tmp_path):
-            try:
-                os_module.unlink(tmp_path)
-            except:
-                pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze video: {str(e)}"
@@ -932,47 +879,46 @@ async def analyze_audio_deepfake(
     - Upload audio (wav, mp3)
     - Returns verdict (REAL/FAKE) and confidence score
     """
-    tmp_path = None
     try:
-        # Save uploaded file temporarily
-        suffix = os_module.path.splitext(file.filename)[-1] if file.filename else ".wav"
-        content = await file.read()
+        # Validate file type
+        if not file.content_type.startswith("audio/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be an audio file (wav, mp3)"
+            )
         
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode='wb') as tmp:
+        # Save uploaded file temporarily
+        suffix = os_module.path.splitext(file.filename)[-1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            content = await file.read()
             tmp.write(content)
-            tmp.flush()
             tmp_path = tmp.name
         
         # Analyze audio
-        result = simple_deepfake_analysis(tmp_path, "audio")
+        import sys
+        sys.path.append("deepfake-detection")
+        from utils.audio_processor import analyze_voice
+        result = analyze_voice(tmp_path)
         
         # Cleanup
-        if tmp_path and os_module.path.exists(tmp_path):
-            os_module.unlink(tmp_path)
+        os_module.unlink(tmp_path)
         
         if result["success"]:
             return {
                 "success": True,
                 "verdict": result["verdict"],
                 "confidence": result["confidence"],
-                "details": result.get("details", {}),
                 "filename": file.filename
             }
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=result.get("error", "Analysis failed")
+                detail=result["error"]
             )
     
     except HTTPException:
         raise
     except Exception as e:
-        # Cleanup on error
-        if tmp_path and os_module.path.exists(tmp_path):
-            try:
-                os_module.unlink(tmp_path)
-            except:
-                pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to analyze audio: {str(e)}"
@@ -989,14 +935,10 @@ if __name__ == "__main__":
     # Get port from environment variable (Railway sets this)
     port = int(os.environ.get("PORT", 8000))
     
-    # Get reload setting (disable in production)
-    reload = os.environ.get("ENVIRONMENT", "development") == "development"
-    
     # Run server
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=port,
-        reload=reload,
         # Railway handles TLS/HTTPS automatically
     )
