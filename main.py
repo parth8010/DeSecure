@@ -31,14 +31,11 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS to allow both web and mobile access
-import os
-allowed_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000").split(",")
-
+# SIMPLE CORS - Allow all origins (no credentials with wildcard)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
