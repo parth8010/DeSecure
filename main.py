@@ -2,7 +2,7 @@
 Cybersecurity Platform - Backend API Server
 Serves both Web and Android applications
 """
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -54,8 +54,8 @@ print(f"🔧 CORS Configuration: {allowed_origins}")  # Debug log
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
+    allow_origins=["*"],  # Force allow all origins
+    allow_credentials=False,  # Can't use credentials with wildcard origin
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
