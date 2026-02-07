@@ -32,34 +32,12 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS to allow both web and mobile access
-import os
-
-# Get allowed origins from environment variable or use defaults
-# IMPORTANT: Always allow all origins if CORS_ORIGINS is not set or is empty
-cors_origins_env = os.environ.get("CORS_ORIGINS", "")
-
-# Parse CORS origins
-if cors_origins_env and cors_origins_env.strip():
-    # If set, use the specified origins
-    allowed_origins = [origin.strip() for origin in cors_origins_env.split(",") if origin.strip()]
-    # If empty list after parsing, default to all
-    if not allowed_origins:
-        allowed_origins = ["*"]
-else:
-    # Default: Allow all origins for development
-    allowed_origins = ["*"]
-
-print(f"🔧 CORS Configuration: {allowed_origins}")  # Debug log
-
+# SIMPLE CORS - Allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Force allow all origins
-    allow_credentials=False,  # Can't use credentials with wildcard origin
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_origins=["*"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,
 )
 
 security = HTTPBearer()
@@ -118,19 +96,6 @@ def health_check():
     }
 
 
-@app.options("/{rest_of_path:path}")
-async def preflight_handler(rest_of_path: str):
-    """Handle CORS preflight OPTIONS requests for all routes"""
-    return Response(
-        content="",
-        status_code=200,
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "3600",
-        }
-    )
 
 
 # ============================================================================
